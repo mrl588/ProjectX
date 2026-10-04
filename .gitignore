@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+apps/api/.env
+.DS_Store
+*.log
+.vercel
+coverage

@@ -1,0 +1,17 @@
+{
+  "name": "pm-day",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @pm/api\" \"npm run dev -w @pm/web\"",
+    "test": "npm run test -w @pm/core",
+    "db:migrate": "npm run db:migrate -w @pm/api",
+    "build": "npm run build -w @pm/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
