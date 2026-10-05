@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String
+  timezone        String         @default("America/New_York")
+  googleSub       String?        @unique
+  refreshToken    String?
+  lastSummaryDay  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  sessions        Session[]
+  workingHours    WorkingHours[]
+  tasks           Task[]
+  sources         Source[]
+  notifications   Notification[]
+  reminders       Reminder[]
+  blocks          CalendarBlock[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model WorkingHours {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekday  Int
+  startMin Int
+  endMin   Int
+
+  @@unique([userId, weekday])
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        String
+  externalId  String?
+  url         String?
+  rawPayload  Json?
+  modelOutput Json?
+  createdAt   DateTime @default(now())
+  tasks       Task[]
+}
+
+model Task {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceId        String?
+  source          Source?         @relation(fields: [sourceId], references: [id])
+  title           String
+  detail          String          @default("")
+  status          String
+  rank            Int             @default(5)
+  estimateMinutes Int             @default(30)
+  deadline        DateTime?
+  plannedDay      String?
+  deferredUntil   DateTime?
+  menial          Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  blockedBy       TaskBlocker[]   @relation("blocked")
+  blocking        TaskBlocker[]   @relation("blocker")
+  blocks          CalendarBlock[]
+  reminders       Reminder[]
+}
+
+model TaskBlocker {
+  id        String @id @default(cuid())
+  userId    String
+  taskId    String
+  blockerId String
+  task      Task   @relation("blocked", fields: [taskId], references: [id], onDelete: Cascade)
+  blocker   Task   @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, blockerId])
+}
+
+model CalendarBlock {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId   String?
+  task     Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  startsAt DateTime
+  endsAt   DateTime
+  pinned   Boolean  @default(false)
+  kind     String
+  title    String
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Reminder {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId       String?
+  task         Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  title        String
+  fireAt       DateTime
+  done         Boolean   @default(false)
+  snoozedUntil DateTime?
+}
